@@ -7,7 +7,6 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
-	"time"
 )
 
 type Store struct {
@@ -16,21 +15,19 @@ type Store struct {
 }
 
 type Receipt struct {
-	id       int64
-	store_id int64
-	total    float64
-	date     time.Time
+	Id       int64   `json:id`
+	Store_id int64   `json:store_id`
+	Total    float64 `json:total`
+	Date     string  `json:date`
 }
 
-var unitTypes []string = []string{"unit", "qt", "oz", "pt", "lb"}
-
 type Purchase struct {
-	id         int64
-	receipt_id int64
-	quantity   int64
-	cost       float64
-	product_id int64
-	unit       string
+	Id         int64   `json:id`
+	Receipt_id int64   `json:receipt_id`
+	Quantity   int64   `json:quantity`
+	Cost       float64 `json:cost`
+	Product_id int64   `json:product_id`
+	Unit       string  `json:unit`
 }
 
 type Product struct {
@@ -97,6 +94,9 @@ func productsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 			decoder := json.NewDecoder(r.Body)
 			var product Product
 			err := decoder.Decode(&product)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 			if product.Category == "" {
 				http.Error(w, "Category Required", http.StatusInternalServerError)
 			}
@@ -149,6 +149,52 @@ func loadProducts(db *sql.DB) {
 	}
 }
 
+func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "PUT" {
+			decoder := json.NewDecoder(r.Body)
+			var receiptUpload ReceiptUpload
+			err := decoder.Decode(&receiptUpload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			if len(receiptUpload.Purchases) == 0 {
+				http.Error(w, "No purchases with receipt", http.StatusInternalServerError)
+			}
+			receipt := receiptUpload.Receipt
+			receiptStatement := fmt.Sprintf(`
+				INSERT INTO receipts (store_id, total, date)
+				VALUES ('%s', '%s', '%s') RETURNING id
+			`, receipt.Store_id, receipt.Total, receipt.Date)
+			var receiptId int64
+			err = db.QueryRow(receiptStatement).Scan(&receiptId)
+			if err != nil {
+				log.Fatal(err)
+			}
+			receiptUpload.Receipt.Id = receiptId
+			purchases := receiptUpload.Purchases
+			purchaseString := `
+				INSERT INTO purchases (receipt_id, quantity, cost, product_id, unit)
+				VALUES ('%s', '%s', '%s', '%s', '%s') RETURNING id
+			`
+			for i, p := range purchases {
+				purchaseStatement := fmt.Sprintf(purchaseString,
+					receiptId, p.Quantity, p.Cost, p.Product_id, p.Unit)
+				var purchaseId int64
+				err = db.QueryRow(purchaseStatement).Scan(&purchaseId)
+				if err != nil {
+					log.Fatal(err)
+				}
+				receiptUpload.Purchases[i].Id = purchaseId
+				receiptUpload.Purchases[i].Receipt_id = receiptId
+			}
+			js, err := json.Marshal(receiptUpload)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(js)
+		}
+	}
+}
+
 func main() {
 	db, err := sql.Open("postgres", "postgres:///groceries_test")
 	if err != nil {
@@ -162,5 +208,6 @@ func main() {
 	http.HandleFunc("/view/", viewHandler)
 	http.HandleFunc("/stores/", storesHandler)
 	http.HandleFunc("/products/", productsHandler(db))
+	http.HandleFunc("/receipt_uploads/", receiptUploadsHandler(db))
 	http.ListenAndServe(":8080", nil)
 }
