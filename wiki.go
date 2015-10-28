@@ -164,7 +164,7 @@ func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Reque
 			receipt := receiptUpload.Receipt
 			receiptStatement := fmt.Sprintf(`
 				INSERT INTO receipts (store_id, total, date)
-				VALUES ('%s', '%s', '%s') RETURNING id
+				VALUES (%v, %v, '%s') RETURNING id
 			`, receipt.Store_id, receipt.Total, receipt.Date)
 			var receiptId int64
 			err = db.QueryRow(receiptStatement).Scan(&receiptId)
@@ -175,7 +175,7 @@ func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Reque
 			purchases := receiptUpload.Purchases
 			purchaseString := `
 				INSERT INTO purchases (receipt_id, quantity, cost, product_id, unit)
-				VALUES ('%s', '%s', '%s', '%s', '%s') RETURNING id
+				VALUES (%v, %v, %v, %v, '%s') RETURNING id
 			`
 			for i, p := range purchases {
 				purchaseStatement := fmt.Sprintf(purchaseString,
