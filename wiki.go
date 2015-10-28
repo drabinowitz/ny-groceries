@@ -149,6 +149,13 @@ func loadProducts(db *sql.DB) {
 	}
 }
 
+func newPurchase() *Purchase {
+	return &Purchase{
+		Quantity: 1,
+		Unit:     "unit",
+	}
+}
+
 func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "PUT" {
@@ -177,7 +184,14 @@ func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Reque
 				INSERT INTO purchases (receipt_id, quantity, cost, product_id, unit)
 				VALUES (%v, %v, %v, %v, '%s') RETURNING id
 			`
-			for i, p := range purchases {
+			for i := range purchases {
+				p := &receiptUpload.Purchases[i]
+				if p.Quantity == 0 {
+					p.Quantity = 1
+				}
+				if p.Unit == "" {
+					p.Unit = "unit"
+				}
 				purchaseStatement := fmt.Sprintf(purchaseString,
 					receiptId, p.Quantity, p.Cost, p.Product_id, p.Unit)
 				var purchaseId int64
@@ -185,8 +199,8 @@ func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Reque
 				if err != nil {
 					log.Fatal(err)
 				}
-				receiptUpload.Purchases[i].Id = purchaseId
-				receiptUpload.Purchases[i].Receipt_id = receiptId
+				p.Id = purchaseId
+				p.Receipt_id = receiptId
 			}
 			js, err := json.Marshal(receiptUpload)
 			w.Header().Set("Content-Type", "application/json")
