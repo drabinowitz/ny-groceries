@@ -10,30 +10,30 @@ import (
 )
 
 type Store struct {
-	Id   int64  `json:id`
-	Name string `json:name`
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
 }
 
 type Receipt struct {
-	Id       int64   `json:id`
-	Store_id int64   `json:store_id`
-	Total    float64 `json:total`
-	Date     string  `json:date`
+	Id       int64   `json:"id"`
+	Store_id int64   `json:"store_id"`
+	Total    float64 `json:"total"`
+	Date     string  `json:"date"`
 }
 
 type Purchase struct {
-	Id         int64   `json:id`
-	Receipt_id int64   `json:receipt_id`
-	Quantity   int64   `json:quantity`
-	Cost       float64 `json:cost`
-	Product_id int64   `json:product_id`
-	Unit       string  `json:unit`
+	Id         int64   `json:"id"`
+	Receipt_id int64   `json:"receipt_id"`
+	Quantity   int64   `json:"quantity"`
+	Cost       float64 `json:"cost"`
+	Product_id int64   `json:"product_id"`
+	Unit       string  `json:"unit"`
 }
 
 type Product struct {
-	Id           int64  `json:id`
-	Category     string `json:category`
-	Sub_category string `json:sub_category, omitempty`
+	Id           int64  `json:"id"`
+	Category     string `json:"category"`
+	Sub_category string `json:"sub_category,omitempty"`
 }
 
 type ReceiptUpload struct {
