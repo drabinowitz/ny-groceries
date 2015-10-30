@@ -37,8 +37,8 @@ type Product struct {
 }
 
 type ReceiptUpload struct {
-	Receipt   Receipt
-	Purchases []Purchase
+	Receipt   Receipt    `json:"receipt"`
+	Purchases []Purchase `json:"purchases"`
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +170,12 @@ func newPurchase() *Purchase {
 
 func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		if r.Method == "PUT" {
 			decoder := json.NewDecoder(r.Body)
 			var receiptUpload ReceiptUpload

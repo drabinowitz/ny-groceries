@@ -10,32 +10,47 @@ let options = [
 ];
 
 class PurchaseForm extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = this._stateFromProps(this.props);
+  }
+
+  _stateFromProps(props) {
+    return {
+      cost: props.purchase.cost || 0,
+      quantity: props.purchase.quantity || 1,
+      unit: props.purchase.unit || 'unit',
+      product: props.products.filter(p =>(
+        p.id === props.purchase.product_id
+      ))[0],
+    };
+  }
+
+  componentWillReceiveProps(props) {
+    this.setState(this._stateFromProps(props));
+  }
+
   render() {
-    let cost = this.props.purchase.cost || 0;
-    let quantity = this.props.purchase.quantity || 1;
-    let unit = this.props.purchase.unit || 'unit';
-    let product = this.props.products.filter(p =>(
-      p.id === this.props.purchase.product_id
-    ))[0]
     return (
       <div>
-        <h4>{product.category} {product.sub_category}</h4>
+        <h4>{this.state.product.category} {this.state.product.sub_category}</h4>
         <span> cost: </span>
         <input
           type='number'
-          value={cost}
+          value={this.state.cost}
           onChange={this.onCostChange.bind(this)}
+          onBlur={this.commitCostChange.bind(this)}
           />
         <span> quantity: </span>
         <input
           type='number'
-          value={quantity}
+          value={this.state.quantity}
           onChange={this.onQuantityChange.bind(this)}
           />
         <span> unit: </span>
         <SelectDropdown
           options={options}
-          selected={options.filter(o => o.id === unit)[0]}
+          selected={options.filter(o => o.id === this.state.unit)[0]}
           onChange={this.onUnitChange.bind(this)}
           />
       </div>
@@ -52,7 +67,7 @@ class PurchaseForm extends React.Component {
   }
 
   onQuantityChange(e) {
-    let quantity = e.target.value;
+    let quantity = parseInt(e.target.value);
     e.preventDefault();
     e.stopPropagation();
     var purchase = {};
@@ -67,11 +82,15 @@ class PurchaseForm extends React.Component {
     let cost = e.target.value;
     e.preventDefault();
     e.stopPropagation();
+    this.setState({cost});
+  }
+
+  commitCostChange(e) {
     var purchase = {};
     for (let key in this.props.purchase) {
       purchase[key] = this.props.purchase[key];
     }
-    purchase.cost = cost;
+    purchase.cost = parseFloat(this.state.cost);
     this.props.onPurchaseChange(purchase);
   }
 }
