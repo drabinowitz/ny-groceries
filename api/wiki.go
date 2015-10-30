@@ -48,6 +48,12 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 var AllStores []Store = make([]Store, 0)
 
 func storesHandler(w http.ResponseWriter, r *http.Request) {
+	if origin := r.Header.Get("Origin"); origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	js, err := json.Marshal(AllStores)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -81,6 +87,12 @@ var AllProducts []Product = make([]Product, 0)
 
 func productsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		if r.Method == "GET" {
 			js, err := json.Marshal(AllProducts)
 			if err != nil {
@@ -223,5 +235,5 @@ func main() {
 	http.HandleFunc("/stores/", storesHandler)
 	http.HandleFunc("/products/", productsHandler(db))
 	http.HandleFunc("/receipt_uploads/", receiptUploadsHandler(db))
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8000", nil)
 }
