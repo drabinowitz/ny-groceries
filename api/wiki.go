@@ -24,7 +24,7 @@ type Receipt struct {
 type Purchase struct {
 	Id         int64   `json:"id"`
 	Receipt_id int64   `json:"receipt_id"`
-	Quantity   int64   `json:"quantity"`
+	Quantity   float64 `json:"quantity"`
 	Cost       float64 `json:"cost"`
 	Product_id int64   `json:"product_id"`
 	Unit       string  `json:"unit"`
@@ -228,7 +228,7 @@ func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Reque
 }
 
 func main() {
-	db, err := sql.Open("postgres", "postgres:///groceries_test")
+	db, err := sql.Open("postgres", "postgres:///groceries")
 	if err != nil {
 		log.Fatal(err)
 	}
