@@ -80,7 +80,8 @@ export default class ReceiptForm extends React.Component {
       width:  '50%',
       boxSizing: 'border-box',
       border: '1px solid black',
-      float: 'left'
+      float: 'left',
+      paddingBottom: '100px',
     }
 
     return (
