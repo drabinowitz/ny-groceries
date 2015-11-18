@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+type Api struct {
+	DB *sql.DB
+}
+
 type Store struct {
 	Id   int64  `json:"id"`
 	Name string `json:"name"`
@@ -61,13 +65,14 @@ func loadStores(db *sql.DB) {
 	}
 }
 
-func (db *sql.DB) GetAllStores() []Store {
+func (api *Api) GetAllStores() []Store {
 	return AllStores
 }
 
 var AllProducts []Product = make([]Product, 0)
 
-func (db *sql.DB) AddProduct(product Product) Product {
+func (api *Api) AddProduct(product Product) Product {
+	db := api.DB
 	statement := "INSERT INTO products (%s) VALUES (%s)"
 	if product.Sub_category != "" {
 		data := fmt.Sprintf("'%s', '%s'", product.Category, product.Sub_category)
@@ -77,7 +82,7 @@ func (db *sql.DB) AddProduct(product Product) Product {
 		statement = fmt.Sprintf(statement, "category", data)
 	}
 	var productId int64
-	_, err = db.Exec(statement)
+	_, err := db.Exec(statement)
 	productIds, err := db.Query("SELECT last_insert_rowid() FROM products")
 	if err != nil {
 		log.Fatal(err)
@@ -94,7 +99,7 @@ func (db *sql.DB) AddProduct(product Product) Product {
 	return product
 }
 
-func (db *sql.DB) GetAllProducts() []Product {
+func (api *Api) GetAllProducts() []Product {
 	return AllProducts
 }
 
@@ -129,7 +134,8 @@ func newPurchase() *Purchase {
 	}
 }
 
-func (db *sql.DB) AddReceiptUpload(receiptUpload ReceiptUpload) ReceiptUpload {
+func (api *Api) AddReceiptUpload(receiptUpload ReceiptUpload) ReceiptUpload {
+	db := api.DB
 	receipt := receiptUpload.Receipt
 	receiptDate, err := time.Parse("01/02/2006", receipt.Date)
 	receiptStatement := fmt.Sprintf(`
@@ -190,15 +196,18 @@ func (db *sql.DB) AddReceiptUpload(receiptUpload ReceiptUpload) ReceiptUpload {
 	return receiptUpload
 }
 
-func Open() *sql.DB {
+func (api *Api) Close() {
+	api.DB.Close()
+}
+
+func Open() *Api {
 	db, err := sql.Open("sqlite3", "./apidb.db")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	loadStores(db)
 	loadProducts(db)
 
-	return db
+	return &Api{db}
 }

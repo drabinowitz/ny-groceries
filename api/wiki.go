@@ -1,17 +1,13 @@
 package main
 
 import (
-	"./apidb.go"
-	"database/sql"
 	"encoding/json"
-	"fmt"
+	"github.com/drabinowitz/ny-groceries/api/apidb"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
 	"net/http"
-	"time"
 )
 
-func setHeaders(w *http.ResponseWriter) {
+func setHeaders(w http.ResponseWriter, r *http.Request) {
 	if origin := r.Header.Get("Origin"); origin != "" {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 	}
@@ -20,10 +16,10 @@ func setHeaders(w *http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
-func storesHandler(db *sql.db) func(w http.ResponseWriter, r *http.Request) {
+func storesHandler(api *apidb.Api) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(&w)
-		js, err := json.Marshal(db.GetAllStores())
+		setHeaders(w, r)
+		js, err := json.Marshal(api.GetAllStores())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -34,11 +30,16 @@ func storesHandler(db *sql.db) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func productsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
+func productsHandler(api *apidb.Api) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(&w)
+		setHeaders(w, r)
 		if r.Method == "GET" {
-			js := json.Marshal(db.GetAllProducts())
+			js, err := json.Marshal(api.GetAllProducts())
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(js)
 
@@ -49,16 +50,16 @@ func productsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
-			js, err := json.Marshal(db.AddProduct(product))
+			js, err := json.Marshal(api.AddProduct(product))
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(js)
 		}
 	}
 }
 
-func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
+func receiptUploadsHandler(api *apidb.Api) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(&w)
+		setHeaders(w, r)
 		if r.Method == "PUT" {
 			decoder := json.NewDecoder(r.Body)
 			var receiptUpload apidb.ReceiptUpload
@@ -66,7 +67,7 @@ func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Reque
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
-			js, err := json.Marshal(db.AddReceiptUpload(receiptUpload))
+			js, err := json.Marshal(api.AddReceiptUpload(receiptUpload))
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(js)
 		}
@@ -74,11 +75,11 @@ func receiptUploadsHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Reque
 }
 
 func main() {
-	db := apidb.Open()
-	defer db.Close()
+	api := apidb.Open()
+	defer api.Close()
 
-	http.HandleFunc("/stores/", storesHandler(db))
-	http.HandleFunc("/products/", productsHandler(db))
-	http.HandleFunc("/receipt_uploads/", receiptUploadsHandler(db))
+	http.HandleFunc("/stores/", storesHandler(api))
+	http.HandleFunc("/products/", productsHandler(api))
+	http.HandleFunc("/receipt_uploads/", receiptUploadsHandler(api))
 	http.ListenAndServe(":8000", nil)
 }
