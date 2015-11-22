@@ -201,7 +201,7 @@ func (api *Api) Close() {
 }
 
 func Open() *Api {
-	db, err := sql.Open("sqlite3", "./apidb.db")
+	db, err := sql.Open("sqlite3", "./apidb/apidb.db")
 	if err != nil {
 		log.Fatal(err)
 	}
