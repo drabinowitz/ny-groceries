@@ -134,6 +134,60 @@ func newPurchase() *Purchase {
 	}
 }
 
+var AllPurchases []Purchase = make([]Purchase, 0)
+
+func loadPurchases(db *sql.DB) {
+	purchases, err := db.Query("SELECT id, receipt_id, quantity, cost, product_id, unit FROM purchases")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer purchases.Close()
+	var (
+		id         int64
+		receipt_id int64
+		quantity   float64
+		cost       float64
+		product_id int64
+		unit       string
+	)
+	for purchases.Next() {
+		err := purchases.Scan(&id, &receipt_id, &quantity, &cost, &product_id, &unit)
+		if err != nil {
+			log.Fatal(err)
+		}
+		AllPurchases = append(AllPurchases, Purchase{id, receipt_id, quantity, cost, product_id, unit})
+	}
+}
+
+func (api *Api) GetAllPurchases() []Purchase {
+	return AllPurchases
+}
+
+var AllReceipts []Receipt = make([]Receipt, 0)
+
+func loadReceipts(db *sql.DB) {
+	receipts, err := db.Query("SELECT id, store_id FROM receipts")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer receipts.Close()
+	var (
+		id       int64
+		store_id int64
+	)
+	for receipts.Next() {
+		err := receipts.Scan(&id, &store_id)
+		if err != nil {
+			log.Fatal(err)
+		}
+		AllReceipts = append(AllReceipts, Receipt{Id: id, Store_id: store_id})
+	}
+}
+
+func (api *Api) GetAllReceipts() []Receipt {
+	return AllReceipts
+}
+
 func (api *Api) AddReceiptUpload(receiptUpload ReceiptUpload) ReceiptUpload {
 	db := api.DB
 	receipt := receiptUpload.Receipt
@@ -208,6 +262,7 @@ func Open() *Api {
 
 	loadStores(db)
 	loadProducts(db)
+	loadPurchases(db)
 
 	return &Api{db}
 }
