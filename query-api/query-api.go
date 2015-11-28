@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/drabinowitz/ny-groceries/api/apidb"
 	"net/http"
-	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -23,7 +23,7 @@ func productsHandler(api *apidb.Api) func(w http.ResponseWriter, r *http.Request
 		setHeaders(w, r)
 		path := r.URL.Path
 		path_arr := strings.Split(path, "/")
-		if len(path_arr) == 2 {
+		if len(path_arr) == 3 {
 			js, err := json.Marshal(api.GetAllProducts())
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -34,7 +34,7 @@ func productsHandler(api *apidb.Api) func(w http.ResponseWriter, r *http.Request
 		} else {
 			category := strings.ToLower(path_arr[2])
 			var sub_category string
-			if len(path_arr) == 4 {
+			if len(path_arr) == 5 {
 				sub_category = strings.ToLower(path_arr[3])
 			}
 			allProducts := api.GetAllProducts()
@@ -56,25 +56,32 @@ func productsHandler(api *apidb.Api) func(w http.ResponseWriter, r *http.Request
 				product_id := purchase.Product_id
 				unitCostsByStore, ok := requestedProducts[product_id]
 				if ok {
-					idx := sort.Search(len(allReceipts), func(i int) bool {
-						return allReceipts[i].Id == purchase.Receipt_id
-					})
-					receipt := allReceipts[idx]
+					var receipt apidb.Receipt
+					for _, receiptItr := range allReceipts {
+						if receiptItr.Id == purchase.Receipt_id {
+							receipt = receiptItr
+						}
+					}
+					if unitCostsByStore[receipt.Store_id] == nil {
+						unitCostsByStore[receipt.Store_id] = make(map[string][]float64)
+					}
 					unitCost := unitCostsByStore[receipt.Store_id][purchase.Unit]
 					unitCost = append(unitCost, float64(purchase.Cost)/float64(purchase.Quantity))
 					requestedProducts[product_id][receipt.Store_id][purchase.Unit] = unitCost
 				}
 			}
-			costedProducts := make(map[int64]map[int64]map[string]float64)
+			costedProducts := make(map[string]map[string]map[string]float64)
 			for product_id, unitCostsByStore := range requestedProducts {
+				costedProducts[strconv.FormatInt(product_id, 10)] = make(map[string]map[string]float64)
 				for store_id, unitCosts := range unitCostsByStore {
+					costedProducts[strconv.FormatInt(product_id, 10)][strconv.FormatInt(store_id, 10)] = make(map[string]float64)
 					for unit, costs := range unitCosts {
 						var averagedCost float64 = 0
 						for _, cost := range costs {
 							averagedCost += cost
 						}
 						averagedCost = averagedCost / float64(len(costs))
-						costedProducts[product_id][store_id][unit] = averagedCost
+						costedProducts[strconv.FormatInt(product_id, 10)][strconv.FormatInt(store_id, 10)][unit] = averagedCost
 					}
 				}
 			}

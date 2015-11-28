@@ -255,7 +255,7 @@ func (api *Api) Close() {
 }
 
 func Open() *Api {
-	db, err := sql.Open("sqlite3", "./apidb/apidb.db")
+	db, err := sql.Open("sqlite3", "../api/apidb/apidb.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -263,6 +263,7 @@ func Open() *Api {
 	loadStores(db)
 	loadProducts(db)
 	loadPurchases(db)
+	loadReceipts(db)
 
 	return &Api{db}
 }

@@ -1,4 +1,5 @@
 api/wiki
+query-api/query-api
 ui/node_modules
 ui/npm-debug.log
 ui/build
