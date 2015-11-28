@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"github.com/drabinowitz/ny-groceries/api/apidb"
-	_ "github.com/mattn/go-sqlite3"
 	"net/http"
 )
 
