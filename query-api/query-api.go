@@ -9,6 +9,43 @@ import (
 	"strings"
 )
 
+type UnitCost struct {
+	Unit     string  `json:"unit"`
+	Quantity float64 `json:"quantity"`
+	Cost     float64 `json:"cost"`
+}
+
+type StoreCostsByUnit struct {
+	Store_id  int64               `json:"store_id"`
+	UnitCosts map[string]UnitCost `json:"units"`
+}
+
+type ProductCostsByStore struct {
+	Product_id int64                       `json:"product_id"`
+	StoreCosts map[string]StoreCostsByUnit `json:"stores"`
+}
+
+type RequestedProducts struct {
+	Products map[string]ProductCostsByStore `json:"products"`
+}
+
+func newStoreCostsByUnit(store_id int64) (storeCostsByUnit StoreCostsByUnit) {
+	storeCostsByUnit.Store_id = store_id
+	storeCostsByUnit.UnitCosts = make(map[string]UnitCost)
+	return
+}
+
+func newProductCostsByStore(product_id int64) (productCostsByStore ProductCostsByStore) {
+	productCostsByStore.Product_id = product_id
+	productCostsByStore.StoreCosts = make(map[string]StoreCostsByUnit)
+	return
+}
+
+func newRequestedProducts() (requestedProducts RequestedProducts) {
+	requestedProducts.Products = make(map[string]ProductCostsByStore)
+	return
+}
+
 func setHeaders(w http.ResponseWriter, r *http.Request) {
 	if origin := r.Header.Get("Origin"); origin != "" {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -38,23 +75,23 @@ func productsHandler(api *apidb.Api) func(w http.ResponseWriter, r *http.Request
 				sub_category = strings.ToLower(path_arr[3])
 			}
 			allProducts := api.GetAllProducts()
-			requestedProducts := make(map[int64]map[int64]map[string][]float64)
+			requestedProducts := newRequestedProducts()
 			for _, product := range allProducts {
 				if strings.ToLower(product.Category) == category {
 					if sub_category == "" || strings.ToLower(product.Sub_category) == sub_category {
-						requestedProducts[product.Id] = make(map[int64]map[string][]float64)
+						requestedProducts.Products[strconv.FormatInt(product.Id, 10)] = newProductCostsByStore(product.Id)
 					}
 				}
 			}
-			if len(requestedProducts) == 0 {
+			if len(requestedProducts.Products) == 0 {
 				http.Error(w, fmt.Sprintf("found no products matching: '%[1] %[2]'", category, sub_category), 400)
 				return
 			}
 			allPurchases := api.GetAllPurchases()
 			allReceipts := api.GetAllReceipts()
 			for _, purchase := range allPurchases {
-				product_id := purchase.Product_id
-				unitCostsByStore, ok := requestedProducts[product_id]
+				product_id := strconv.FormatInt(purchase.Product_id, 10)
+				productCostsByStore, ok := requestedProducts.Products[product_id]
 				if ok {
 					var receipt apidb.Receipt
 					for _, receiptItr := range allReceipts {
@@ -62,30 +99,19 @@ func productsHandler(api *apidb.Api) func(w http.ResponseWriter, r *http.Request
 							receipt = receiptItr
 						}
 					}
-					if unitCostsByStore[receipt.Store_id] == nil {
-						unitCostsByStore[receipt.Store_id] = make(map[string][]float64)
+					store_id := strconv.FormatInt(receipt.Store_id, 10)
+					_, ok := productCostsByStore.StoreCosts[store_id]
+					if !ok {
+						productCostsByStore.StoreCosts[store_id] = newStoreCostsByUnit(receipt.Store_id)
 					}
-					unitCost := unitCostsByStore[receipt.Store_id][purchase.Unit]
-					unitCost = append(unitCost, float64(purchase.Cost)/float64(purchase.Quantity))
-					requestedProducts[product_id][receipt.Store_id][purchase.Unit] = unitCost
+					unitCost := productCostsByStore.StoreCosts[store_id].UnitCosts[purchase.Unit]
+					unitCost.Unit = purchase.Unit
+					unitCost.Quantity += purchase.Quantity
+					unitCost.Cost += purchase.Cost
+					requestedProducts.Products[product_id].StoreCosts[store_id].UnitCosts[purchase.Unit] = unitCost
 				}
 			}
-			costedProducts := make(map[string]map[string]map[string]float64)
-			for product_id, unitCostsByStore := range requestedProducts {
-				costedProducts[strconv.FormatInt(product_id, 10)] = make(map[string]map[string]float64)
-				for store_id, unitCosts := range unitCostsByStore {
-					costedProducts[strconv.FormatInt(product_id, 10)][strconv.FormatInt(store_id, 10)] = make(map[string]float64)
-					for unit, costs := range unitCosts {
-						var averagedCost float64 = 0
-						for _, cost := range costs {
-							averagedCost += cost
-						}
-						averagedCost = averagedCost / float64(len(costs))
-						costedProducts[strconv.FormatInt(product_id, 10)][strconv.FormatInt(store_id, 10)][unit] = averagedCost
-					}
-				}
-			}
-			js, err := json.Marshal(costedProducts)
+			js, err := json.Marshal(requestedProducts)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
