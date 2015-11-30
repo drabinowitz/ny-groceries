@@ -16,34 +16,37 @@ type UnitCost struct {
 }
 
 type StoreCostsByUnit struct {
-	Store_id  int64               `json:"store_id"`
-	UnitCosts map[string]UnitCost `json:"units"`
+	Store_id  int64                `json:"store_id"`
+	UnitCosts map[string]*UnitCost `json:"units"`
 }
 
 type ProductCostsByStore struct {
-	Product_id int64                       `json:"product_id"`
-	StoreCosts map[string]StoreCostsByUnit `json:"stores"`
+	Product_id int64                        `json:"product_id"`
+	StoreCosts map[string]*StoreCostsByUnit `json:"stores"`
 }
 
 type RequestedProducts struct {
-	Products map[string]ProductCostsByStore `json:"products"`
+	Products map[string]*ProductCostsByStore `json:"products"`
 }
 
-func newStoreCostsByUnit(store_id int64) (storeCostsByUnit StoreCostsByUnit) {
+func newStoreCostsByUnit(store_id int64) *StoreCostsByUnit {
+	storeCostsByUnit := &StoreCostsByUnit{}
 	storeCostsByUnit.Store_id = store_id
-	storeCostsByUnit.UnitCosts = make(map[string]UnitCost)
-	return
+	storeCostsByUnit.UnitCosts = make(map[string]*UnitCost)
+	return storeCostsByUnit
 }
 
-func newProductCostsByStore(product_id int64) (productCostsByStore ProductCostsByStore) {
+func newProductCostsByStore(product_id int64) *ProductCostsByStore {
+	productCostsByStore := &ProductCostsByStore{}
 	productCostsByStore.Product_id = product_id
-	productCostsByStore.StoreCosts = make(map[string]StoreCostsByUnit)
-	return
+	productCostsByStore.StoreCosts = make(map[string]*StoreCostsByUnit)
+	return productCostsByStore
 }
 
-func newRequestedProducts() (requestedProducts RequestedProducts) {
-	requestedProducts.Products = make(map[string]ProductCostsByStore)
-	return
+func newRequestedProducts() *RequestedProducts {
+	requestedProducts := &RequestedProducts{}
+	requestedProducts.Products = make(map[string]*ProductCostsByStore)
+	return requestedProducts
 }
 
 func setHeaders(w http.ResponseWriter, r *http.Request) {
@@ -100,15 +103,19 @@ func productsHandler(api *apidb.Api) func(w http.ResponseWriter, r *http.Request
 						}
 					}
 					store_id := strconv.FormatInt(receipt.Store_id, 10)
-					_, ok := productCostsByStore.StoreCosts[store_id]
+					storeCostsByUnit, ok := productCostsByStore.StoreCosts[store_id]
 					if !ok {
-						productCostsByStore.StoreCosts[store_id] = newStoreCostsByUnit(receipt.Store_id)
+						storeCostsByUnit = newStoreCostsByUnit(receipt.Store_id)
+						productCostsByStore.StoreCosts[store_id] = storeCostsByUnit
 					}
-					unitCost := productCostsByStore.StoreCosts[store_id].UnitCosts[purchase.Unit]
+					unitCost, ok := storeCostsByUnit.UnitCosts[purchase.Unit]
+					if !ok {
+						unitCost = &UnitCost{}
+						storeCostsByUnit.UnitCosts[purchase.Unit] = unitCost
+					}
 					unitCost.Unit = purchase.Unit
 					unitCost.Quantity += purchase.Quantity
 					unitCost.Cost += purchase.Cost
-					requestedProducts.Products[product_id].StoreCosts[store_id].UnitCosts[purchase.Unit] = unitCost
 				}
 			}
 			js, err := json.Marshal(requestedProducts)
