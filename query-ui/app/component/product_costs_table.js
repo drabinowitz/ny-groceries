@@ -1,6 +1,7 @@
 import React from 'react';
-import request from '../../../ui/app/ajax';
+import request from '../ajax';
 
+import ProductTable from './product_table';
 import ProductsToRequestInput from './products_to_request_input';
 
 
@@ -25,7 +26,7 @@ export default class ProductCostsTable extends React.Component {
       let resolvedPromises = [];
       let rejected = false;
       this.state.productsToRequest.forEach((product, i, productsToRequest) => {
-        request('products/#{product}/')
+        request(`products/${product}/`)
           .then(data => {
             resolvedPromises.push(data.products);
             if (resolvedPromises.length === productsToRequest.length) {
@@ -56,6 +57,12 @@ export default class ProductCostsTable extends React.Component {
     this.setState({productsToRequest});
   }
 
+  onClearAll(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    this.setState({requestedProducts: null});
+  }
+
   render() {
     let overlayStyles = {
       "display":          this.state.pendingRequest? "block" :  "none",
@@ -71,6 +78,12 @@ export default class ProductCostsTable extends React.Component {
     if (!this.state.products) {
       return <h1>Loading App</h1>;
     }
+    let requestedProductsTable = null;
+    if (this.state.requestedProducts) {
+      requestedProductsTable = <ProductTable
+        rows={this.state.requestedProducts}
+      />;
+    }
     return(
       <div>
         <div className='overlay' style={overlayStyles}>
@@ -80,9 +93,17 @@ export default class ProductCostsTable extends React.Component {
           <ProductsToRequestInput
             products                  = {this.state.products}
             productsToRequest         = {this.state.productsToRequest}
-            onProductsToRequestChange = {onProductsToRequestChange.bind(this)}
+            onProductsToRequestChange =
+              {this.onProductsToRequestChange.bind(this)}
             onRequestProducts         = {this.onRequestProducts.bind(this)}
           />
+          <button
+            onClick  = {this.onClearAll.bind(this)}
+            disabled = {!this.state.requestedProducts}
+          >
+            Clear All
+          </button>
+          {requestedProductsTable}
         </div>
       </div>
     );
