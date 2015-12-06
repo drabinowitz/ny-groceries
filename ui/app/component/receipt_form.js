@@ -31,6 +31,7 @@ export default class ReceiptForm extends React.Component {
   }
 
   onSubmitReceipt() {
+    let alertResponse = data => alert(JSON.stringify(data));
     request('receipt_uploads/', {
       type: 'PUT',
       data: JSON.stringify({
@@ -41,7 +42,7 @@ export default class ReceiptForm extends React.Component {
         },
         purchases: this.state.productPurchases,
       }),
-    }).then(alert, alert);
+    }).then(alertResponse, alertResponse);
   }
 
   submitNewProduct(product) {
