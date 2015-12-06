@@ -41,7 +41,7 @@ export default class ReceiptForm extends React.Component {
         },
         purchases: this.state.productPurchases,
       }),
-    }).then(console.log.bind(console));
+    }).then(alert, alert);
   }
 
   submitNewProduct(product) {
@@ -84,6 +84,11 @@ export default class ReceiptForm extends React.Component {
       paddingBottom: '100px',
     }
 
+    let rightWrapperDiv = {
+      ...wrapperDiv,
+      position: 'fixed',
+    }
+
     return (
       <div>
         <div className='left' style={wrapperDiv}>
@@ -113,7 +118,7 @@ export default class ReceiptForm extends React.Component {
           <hr />
           <button onClick={this.onSubmitReceipt.bind(this)}>Add Receipt</button>
         </div>
-        <div className='right' style={wrapperDiv}>
+        <div className='right' style={rightWrapperDiv}>
           <ProductForm onSubmit={this.submitNewProduct.bind(this)} />
           <hr />
           <ProductTable
