@@ -41,13 +41,13 @@ export default class ProductCostsTable extends React.Component {
           });
       });
     }).then(productCosts => {
-      let allProductCosts = productCosts.reduce((allCosts, costSet) => ({
-        ...allCosts,
-        ...costSet,
-      }), this.state.requestedProducts || {});
+      let currentRequestedProducts = this.state.requestedProducts || {};
       this.setState({
         pendingRequest: false,
-        requestedProducts: allProductCosts,
+        requestedProducts: {
+          ...currentRequestedProducts,
+          ...ProductCosts.products,
+        },
         productsToRequest: [],
       });
     });
