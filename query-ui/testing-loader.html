@@ -1,0 +1,24 @@
+<html><head></head><body>
+  <div id='#app-container' />
+  <script id='react' src="https://fb.me/react-0.14.3.min.js"></script>
+  <script id='react-dom' async src="https://fb.me/react-dom-0.14.3.min.js"></script>
+  <script id='app-src' async src="./app.js"></script>
+  <script>
+    var loaders = {
+      REACT_DOM_SCRIPT: 'REACT_DOM_SCRIPT'
+    };
+    var reactFullyLoaded = function (script) {
+      window[script] = true;
+      if (window[loaders.REACT_DOM_SCRIPT]) {
+        if (window.init) {
+          window.init();
+        } else {
+          var appSrcScript = document.querySelector('script#app-src');
+          appSrcScript.onload = () => window.init();
+        }
+      }
+    };
+    var reactDomScript = document.querySelector('script#react-dom');
+    reactDomScript.onload = reactFullyLoaded.bind(window, loaders.REACT_DOM_SCRIPT);
+  </script>
+</body></html>
