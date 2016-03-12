@@ -80,5 +80,8 @@ func main() {
 	http.HandleFunc("/stores/", storesHandler(api))
 	http.HandleFunc("/products/", productsHandler(api))
 	http.HandleFunc("/receipt_uploads/", receiptUploadsHandler(api))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        http.ServeFile(w,r, "../ui/build/index.html")
+    })
 	http.ListenAndServe(":8000", nil)
 }
