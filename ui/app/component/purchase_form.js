@@ -103,7 +103,7 @@ class PurchaseForm extends React.Component {
   removePurchase(e) {
     e.preventDefault();
     e.stopPropagation();
-    this.props.onRemove(this.props.purchase);
+    this.props.removePurchase(this.props.purchase);
   }
 }
 
