@@ -28,14 +28,23 @@ class ProductTable extends React.Component {
       {field: 'id', label: 'add', format: id => {
         let disabled = this.props.productIds.filter(pid => pid === id)[0];
         return (
-          <button disabled={disabled} onClick={this.addProduct.bind(this, id)}>
-            Add
-          </button>
+          <div>
+            <button disabled={!this.props.hasStore} onClick={this.findPurchases.bind(this, id)}>
+              Find Purchases
+            </button>
+            <button disabled={disabled} onClick={this.addProduct.bind(this, id)}>
+              Add
+            </button>
+          </div>
         );
       }},
       {field: 'category', label: 'Category'},
       {field: 'sub_category', label: 'Sub Category'},
     ];
+  }
+
+  findPurchases(id) {
+      this.props.onFindPurchases(id);
   }
 
   addProduct(id) {
@@ -45,6 +54,8 @@ class ProductTable extends React.Component {
 
 ProductTable.propTypes = {
   rows: React.PropTypes.arrayOf(React.PropTypes.object).isRequired,
+  hasStore: React.PropTypes.bool,
+  onFindPurchases: React.PropTypes.func.isRequired,
   onProductAdd: React.PropTypes.func.isRequired,
   productIds: React.PropTypes.array.isRequired,
 };

@@ -6,6 +6,7 @@ import moment from 'moment'
 import ProductForm from './product_form';
 import ProductTable from './product_table';
 import PurchaseForm from './purchase_form';
+import FoundPurchasesModal from './found_purchases_modal';
 
 export default class ReceiptForm extends React.Component {
   constructor() {
@@ -17,6 +18,7 @@ export default class ReceiptForm extends React.Component {
       productPurchases: [],
       date: moment().format('MM/DD/YYYY'),
       receiptTotal: 0,
+      foundPurchases: null
     };
   }
 
@@ -84,8 +86,19 @@ export default class ReceiptForm extends React.Component {
       paddingBottom: '100px',
     }
 
+    let foundPurchasesModal;
+    if (this.state.foundPurchases) {
+        foundPurchasesModal =
+          <FoundPurchasesModal
+            purchases={this.state.foundPurchases}
+            onCancelClick={this.onFoundPurchasesCancel.bind(this)}
+            onPurchaseClick={this.onFoundPurchasesSelect.bind(this)}
+            />
+    }
+
     return (
       <div>
+        {foundPurchasesModal}
         <div className='left' style={wrapperDiv}>
           <h1>ReceiptForm</h1>
           <hr />
@@ -118,6 +131,8 @@ export default class ReceiptForm extends React.Component {
           <hr />
           <ProductTable
             onProductAdd={this.onProductPurchaseAdd.bind(this)}
+            hasStore={Boolean(this.state.selectedStore)}
+            onFindPurchases={this.onFindPurchases.bind(this)}
             productIds={productIds}
             rows={this.state.products}
           />
@@ -140,6 +155,23 @@ export default class ReceiptForm extends React.Component {
   onProductPurchaseAdd(product_id) {
     this.setState({
       productPurchases: this.state.productPurchases.concat([{product_id}]),
+    });
+  }
+
+  onFindPurchases(product_id) {
+    request(`purchases/${this.state.selectedStore.id}/${product_id}`).then(data => {
+      this.setState({foundPurchases: data});
+    });
+  }
+
+  onFoundPurchasesCancel() {
+    this.setState({foundPurchases: null});
+  }
+
+  onFoundPurchasesSelect(purchase) {
+    this.setState({
+      productPurchases: this.state.productPurchases.concat(purchase),
+      foundPurchases: null
     });
   }
 
