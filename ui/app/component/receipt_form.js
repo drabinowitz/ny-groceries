@@ -43,7 +43,7 @@ export default class ReceiptForm extends React.Component {
         },
         purchases: this.state.productPurchases,
       }),
-    }).then(console.log.bind(console));
+    }).then(r => { alert(JSON.stringify(r)); });
   }
 
   submitNewProduct(product) {
@@ -67,7 +67,7 @@ export default class ReceiptForm extends React.Component {
       id: store.id,
     }));
     let productIds = this.state.productPurchases.map(p => p.product_id);
-    let purchaseForms = this.state.productPurchases.map(p => (
+    let purchaseForms = this.state.productPurchases.slice().reverse().map(p => (
       <PurchaseForm
         key={p.product_id}
         products={this.state.products}

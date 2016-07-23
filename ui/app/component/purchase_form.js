@@ -19,7 +19,7 @@ class PurchaseForm extends React.Component {
     return {
       cost: props.purchase.cost || 0,
       quantity: props.purchase.quantity || 1,
-      unit: props.purchase.unit || 'unit',
+      unit: props.purchase.unit || 'oz',
       product: props.products.filter(p =>(
         p.id === props.purchase.product_id
       ))[0],
