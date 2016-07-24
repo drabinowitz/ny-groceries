@@ -94,8 +94,8 @@ func (api *Api) AddProduct(product Product) Product {
 			log.Fatal(err)
 		}
 	}
-	AllProducts = append(AllProducts, product)
 	product.Id = productId
+	AllProducts = append(AllProducts, product)
 	return product
 }
 
